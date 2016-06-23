@@ -9,10 +9,10 @@ bib.dfr = function (spec) {
     // Construction: override inherited sorting()
     that.sorting([
         ["year_authortitle", "by year, then by author"],
-        ["issue_journalcontents", "by journal issue"],
-        ["year_journalcontents", "by year, then by journal contents"],
-        ["decade_date", "chronologically by decades"],
-        ["decade_authortitle", "by decades, then by author"],
+//         ["issue_journalcontents", "by journal issue"],
+//         ["year_journalcontents", "by year, then by journal contents"],
+//         ["decade_date", "chronologically by decades"],
+//         ["decade_authortitle", "by decades, then by author"],
         ["author_authortitle", "alphabetically by author"]
     ]);
 
@@ -119,49 +119,60 @@ bib.dfr = function (spec) {
     // utility function: extract a string giving the citation form of a
     // document's authors.
 
-    doc_author = function (auths) {
-        var lead,
-            lead_trail,
-            result,
-            authors = auths.split(that.options().author_delimiter)
-                // ensure an empty or white-space author is not counted
-                .filter(function (a) { return (/\S/).test(a); }),
-            n_auth = authors.length;
-
-        if (n_auth === 0) {
-            return that.options().anon;
-        }
-
-        lead = authors[0].replace(/,/g, "").split(" ");
-        // check for Jr., Sr., 2nd, etc.
-        // Can mess up if last name is actually the letter I, X, or V.
-        lead_trail = lead.pop();
-        if (lead.length >= 2
-                && (lead_trail.search(/^(\d|Jr|Sr|[IXV]+$)/) !== -1)) {
-            result = lead.pop().replace(/_$/, "");
-            lead_trail = ", " + lead_trail.replace(/\W*$/, "");
-        } else {
-            result = lead_trail;
-            lead_trail = "";
-        }
-        result += ", " + lead.join(" ") + lead_trail;
-        if (n_auth > 1) {
-            if (n_auth >= that.options().et_al) {
-                result += ", ";
-                result += authors.slice(1, that.options().et_al).join(", ");
-                result += "et al.";
-            } else {
-                if (n_auth > 2) {
-                    result += ", ";
-                }
-                result += authors.slice(1, n_auth - 1)
-                    .join(", ");
-                result += ", and " + authors[n_auth - 1];
-            }
-        }
-
-        return result;
-    };
+    // doc_jstor_author = function (auths) {
+//         var lead,
+//             lead_trail,
+//             result,
+//             authors = auths.split(that.options().author_delimiter)
+//                 // ensure an empty or white-space author is not counted
+//                 .filter(function (a) { return (/\S/).test(a); }),
+//             n_auth = authors.length;
+// 
+//         if (n_auth === 0) {
+//             return that.options().anon;
+//         }
+// 
+//         lead = authors[0].replace(/,/g, "").split(" ");
+//         // check for Jr., Sr., 2nd, etc.
+//         // Can mess up if last name is actually the letter I, X, or V.
+//         lead_trail = lead.pop();
+//         if (lead.length >= 2
+//                 && (lead_trail.search(/^(\d|Jr|Sr|[IXV]+$)/) !== -1)) {
+//             result = lead.pop().replace(/_$/, "");
+//             lead_trail = ", " + lead_trail.replace(/\W*$/, "");
+//         } else {
+//             result = lead_trail;
+//             lead_trail = "";
+//         }
+//         result += ", " + lead.join(" ") + lead_trail;
+//         if (n_auth > 1) {
+//             if (n_auth >= that.options().et_al) {
+//                 result += ", ";
+//                 result += authors.slice(1, that.options().et_al).join(", ");
+//                 result += "et al.";
+//             } else {
+//                 if (n_auth > 2) {
+//                     result += ", ";
+//                 }
+//                 result += authors.slice(1, n_auth - 1)
+//                     .join(", ");
+//                 result += ", and " + authors[n_auth - 1];
+//             }
+//         }
+// 
+//         return result;
+//     };
+    
+    // Dissertations in ProQuest give authors in LAST, FIRST MIDDLE format,
+    // and always have n_auth == 1. Since that's what we want for our citation,
+    // just have to convert to Title Case. This code is from http://bit.ly/28UXm90 
+    // by Sonya Moisset, renamed to doc_author to minimize code breakage elsewhere:
+	function doc_author(str) {
+		return str.toLowerCase().split(' ').map(function(word) {
+			return word.replace(word[0], word[0].toUpperCase());
+		}).join(' ');
+	}
+    
     that.doc_author = doc_author;
 
     // override inherited citation
@@ -179,33 +190,40 @@ bib.dfr = function (spec) {
             .replace(/"/g,'’') // which leaves closing "
             .replace(/'/g,'’')
             .replace(/ <br><\/br>/g,'. ');
-        s += '“' + title + '.”';
+        s += '“' + title + '.” ';
         s = s.replace(/’\./g,".’"); // fix up ’.” situations
 
-        s += " <em>" + doc.journaltitle + "</em> ";
-        s += doc.volume;
-        if (doc.issue) {
-            s += ", no. " + doc.issue;
-        }
+//         s += " <em>" + doc.journaltitle + "</em> ";
+//         s += doc.volume;
+//         if (doc.issue) {
+//             s += ", no. " + doc.issue;
+//         }
+        // Ben: simplify university by removing overly fussy branch names
+        s += doc.university.replace(/-.*Campus$/, "") + ". ";
 
         // JSTOR supplies UTC dates
-        s += " (" + d3.time.format.utc("%B %Y")(doc.date) + "): ";
+//         s += " (" + d3.time.format.utc("%B %Y")(doc.date) + "): ";
+		
+		s += d3.time.format.utc("%Y")(doc.date) + "."
 
-        s += doc.pagerange + ".";
+//         s += doc.pagerange + ".";
 
+		// fix weird characters
         s = s.replace(/\.\./g, ".");
         s = s.replace(/_/g, ",");
         s = s.replace(/\t/g, "");
+        
 
         return s;
     };
 
-    // provide url method
-    that.url = function (doc) {
-        return "http://www.jstor.org"
-            + "/stable/"
-            + doc.doi;
-    };
+//	   Ben adds: this will have to wait until I re-check the MARC records
+//     // provide url method
+//     that.url = function (doc) {
+//         return "http://www.jstor.org"
+//             + "/stable/"
+//             + doc.doi;
+//     };
 
     return that;
 }; // bib_dfr()

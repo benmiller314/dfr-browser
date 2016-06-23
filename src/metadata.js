@@ -79,18 +79,14 @@ metadata.dfr = function (spec) {
             // id,title,author,journaltitle,volume,issue,pubdate,pagerange
 
             result = {
-                doi: d[0].trim(), // id
+                id: d[0].trim(), // id
                 title: d[1].trim(),
                 authors: d[2].trim(),
-                journaltitle: d[3].trim(),
-                volume: d[4].trim(),
-                issue: d[5].trim(),
-                date: new Date(d[6].trim()), // pubdate (UTC)
-                pagerange: d[7].trim()
-                    .replace(/^p?p\. /, "")
-                    .replace(/-/g, "–")
+                university: d[3].trim(),
+                date: new Date(d[4].trim()) // pubdate (UTC)
             };
             // calculate years from dates just once and store
+            console.log(result);
 
             return result;
         });
